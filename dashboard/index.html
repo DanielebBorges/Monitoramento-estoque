@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempWatch | Monitoramento de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="dashboard">
+        <main class="main-content">
+            
+            <header class="topbar">
+                <div>
+                    <h1>Monitoramento de estoque</h1>
+                    <p>Acompanhe as movimentações em tempo real.</p>
+                </div>
+
+                <div class="device-status">
+                    <span class="status-dot"></span>
+                    ESP32-01
+                </div>
+            </header>
+
+            <section class="summary-cards">
+                <div class="card">
+                    <p>Total de movimentações</p>
+                    <h2 id="totalMovimentos">0</h2>
+                    <span>Eventos registrados</span>
+                </div>
+
+                <div class="card">
+                    <p>Última movimentação</p>
+                    <h2 id="ultimaMovimentacao">--:--</h2>
+                    <span>Horário do último evento</span>
+                </div>
+
+                <div class="card">
+                    <p>Dispositivo</p>
+                    <h2>ESP32-01</h2>
+                    <span>Sensor PIR conectado</span>
+                </div>
+            </section>
+
+            <section class="history-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Histórico de movimentações</h2>
+                        <p>Registros enviados pelo sensor</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Dispositivo</th>
+                                <th>Evento</th>
+                                <th>Total</th>
+                                <th>Data e horário</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tabelaMovimentacoes">
+                            <tr>
+                                <td colspan="5">Carregando movimentações...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
