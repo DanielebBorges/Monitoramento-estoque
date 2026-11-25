@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,75 +5,486 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TempWatch | Monitoramento de Estoque</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 </head>
 <body>
 
-    <div class="dashboard">
-        <main class="main-content">
-            
-            <header class="topbar">
-                <div>
-                    <h1>Monitoramento de estoque</h1>
-                    <p>Acompanhe as movimentações em tempo real.</p>
-                </div>
+    <!-- ================= MENU SUPERIOR ================= -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-inner">
+            <a href="#inicio" class="logo">
+                <span class="logo-icon">TW</span>
+                <span>TempWatch</span>
+            </a>
 
-                <div class="device-status">
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#inicio" class="active">Início</a></li>
+                <li><a href="#estoque">Estoque</a></li>
+                <li><a href="#analises">Análises</a></li>
+                <li><a href="#historico">Histórico</a></li>
+                <li><a href="#relatorios">Relatórios</a></li>
+                <li><a href="#configuracoes">Configurações</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="device-status" id="deviceStatus" data-status="online" title="Status do sensor">
                     <span class="status-dot"></span>
-                    ESP32-01
+                    <span id="deviceTexto">ESP32-01</span>
                 </div>
-            </header>
+                <div class="alertas-wrap">
+                    <button class="icon-btn" id="btnAlertas" title="Central de alertas" aria-label="Central de alertas">
+                        🔔<span class="badge-count hidden" id="alertasCount">0</span>
+                    </button>
+                    <div class="alertas-painel hidden" id="alertasPainel">
+                        <div class="alertas-head">
+                            <strong>Alertas</strong>
+                            <small id="alertasResumo">Tudo certo</small>
+                        </div>
+                        <ul id="alertasLista"></ul>
+                    </div>
+                </div>
+                <button class="icon-btn" id="btnTema" title="Alternar tema claro/escuro" aria-label="Alternar tema">🌙</button>
+            </div>
+        </div>
+    </nav>
 
-            <section class="summary-cards">
-                <div class="card">
-                    <p>Total de movimentações</p>
-                    <h2 id="totalMovimentos">0</h2>
-                    <span>Eventos registrados</span>
+    <main>
+
+        <!-- ================= INÍCIO ================= -->
+        <section id="inicio" class="hero">
+            <div class="container hero-inner">
+                <div class="hero-texto">
+                    <span class="eyebrow eyebrow-light"><span class="live-dot"></span> Monitoramento ao vivo</span>
+                    <h1>Seu estoque contado sozinho, a cada movimento.</h1>
+                    <p id="heroFrase">Conectando ao sensor...</p>
+
+                    <div class="hero-acoes">
+                        <button class="btn btn-primary" data-acao="entrada">+ Registrar entrada</button>
+                        <button class="btn btn-ghost" data-acao="contagem">Fazer contagem física</button>
+                        <a href="#historico" class="btn btn-ghost">Ver histórico</a>
+                    </div>
+                    <small class="sync-info" id="syncTexto">Sincronizando...</small>
                 </div>
 
-                <div class="card">
-                    <p>Última movimentação</p>
-                    <h2 id="ultimaMovimentacao">--:--</h2>
-                    <span>Horário do último evento</span>
+                <div class="hero-kpis">
+                    <div class="kpi">
+                        <p>Itens em estoque</p>
+                        <h2 id="kpiItens">--</h2>
+                        <span id="kpiItensDet">Nenhum produto cadastrado</span>
+                    </div>
+                    <div class="kpi">
+                        <p>Valor em estoque</p>
+                        <h2 id="kpiValor">--</h2>
+                        <span>Quantidade × custo unitário</span>
+                    </div>
+                    <div class="kpi">
+                        <p>Movimentações hoje</p>
+                        <h2 id="kpiHoje">0</h2>
+                        <span id="kpiHojeDet" class="trend">--</span>
+                    </div>
+                    <div class="kpi">
+                        <p>Última movimentação</p>
+                        <h2 id="kpiUltima">--:--</h2>
+                        <span id="kpiUltimaDet">Aguardando eventos</span>
+                    </div>
+                    <div class="kpi">
+                        <p>Acuracidade do inventário</p>
+                        <h2 id="kpiAcuracidade">--</h2>
+                        <span id="kpiAcuracidadeDet">Faça uma contagem física</span>
+                    </div>
+                    <div class="kpi">
+                        <p>Alertas ativos</p>
+                        <h2 id="kpiAlertas">0</h2>
+                        <span id="kpiAlertasDet">Tudo certo</span>
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <div class="card">
-                    <p>Dispositivo</p>
-                    <h2>ESP32-01</h2>
-                    <span>Sensor PIR conectado</span>
-                </div>
-            </section>
-
-            <section class="history-section">
-                <div class="section-header">
+        <!-- ================= ESTOQUE ================= -->
+        <section id="estoque" class="secao">
+            <div class="container">
+                <div class="secao-head">
                     <div>
-                        <h2>Histórico de movimentações</h2>
-                        <p>Registros enviados pelo sensor</p>
+                        <span class="eyebrow">Estoque</span>
+                        <h2>Produtos monitorados</h2>
+                        <p>Cada produto fica ligado a um sensor. Cada movimento detectado conta como uma saída.</p>
+                    </div>
+                    <div class="secao-acoes">
+                        <button class="btn" data-acao="movimento">⇅ Lançar movimentação</button>
+                        <button class="btn btn-primary" id="btnNovoProduto">+ Novo produto</button>
                     </div>
                 </div>
 
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Dispositivo</th>
-                                <th>Evento</th>
-                                <th>Total</th>
-                                <th>Data e horário</th>
-                            </tr>
-                        </thead>
+                <div class="produtos-grid" id="produtosGrid"></div>
 
-                        <tbody id="tabelaMovimentacoes">
-                            <tr>
-                                <td colspan="5">Carregando movimentações...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="panel reposicao">
+                    <div class="section-header">
+                        <div>
+                            <h3>🛒 Sugestão de compra</h3>
+                            <p>Produtos que chegaram ao ponto de pedido, considerando o consumo médio e o prazo de entrega</p>
+                        </div>
+                        <button class="btn" id="btnCopiarPedido">Copiar lista</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Atual</th>
+                                    <th>Ponto de pedido</th>
+                                    <th>Consumo/dia</th>
+                                    <th>Comprar</th>
+                                    <th>Custo estimado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaReposicao"></tbody>
+                        </table>
+                    </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-        </main>
-    </div>
+        <!-- ================= ANÁLISES ================= -->
+        <section id="analises" class="secao secao-alt">
+            <div class="container">
+                <div class="secao-head">
+                    <div>
+                        <span class="eyebrow">Análises</span>
+                        <h2>Entenda o ritmo do seu estoque</h2>
+                        <p>Padrões de movimentação, horários de pico e evolução do nível de estoque.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-main">
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Movimentações ao longo do tempo</h3>
+                                <p>Eventos detectados pelo sensor</p>
+                            </div>
+                            <div class="segmented" id="seletorPeriodo">
+                                <button data-periodo="24h" class="active">24h</button>
+                                <button data-periodo="7d">7 dias</button>
+                                <button data-periodo="30d">30 dias</button>
+                            </div>
+                        </div>
+                        <div class="chart-box"><canvas id="graficoEventos"></canvas></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Atividade ao vivo</h3>
+                                <p>Últimos eventos recebidos</p>
+                            </div>
+                            <button class="icon-btn icon-sm" id="btnSom" title="Som ao detectar movimento">🔕</button>
+                        </div>
+                        <ul class="feed" id="feed"><li class="feed-vazio">Carregando...</li></ul>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Nível de estoque</h3>
+                                <p>Saldo ao longo do tempo, com entradas, saídas e contagens</p>
+                            </div>
+                            <select id="selProdutoNivel" class="select"></select>
+                        </div>
+                        <div class="chart-box"><canvas id="graficoNivel"></canvas></div>
+                        <p class="vazio-msg hidden" id="nivelVazio">Cadastre um produto para acompanhar o nível de estoque.</p>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Movimentações por turno</h3>
+                                <p>Últimos 30 dias</p>
+                            </div>
+                        </div>
+                        <div class="chart-box"><canvas id="graficoTurnos"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-analise">
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Mapa de calor</h3>
+                                <p>Dia da semana × hora, últimos 30 dias</p>
+                            </div>
+                            <div class="legenda">
+                                <span>Menos</span>
+                                <i style="opacity:.15"></i><i style="opacity:.4"></i><i style="opacity:.7"></i><i style="opacity:1"></i>
+                                <span>Mais</span>
+                            </div>
+                        </div>
+                        <div class="heatmap-wrap"><div class="heatmap" id="heatmap"></div></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="section-header">
+                            <div>
+                                <h3>Por dia da semana</h3>
+                                <p>Total de eventos, últimos 30 dias</p>
+                            </div>
+                        </div>
+                        <div class="chart-box"><canvas id="graficoSemana"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="section-header">
+                        <div>
+                            <h3>🌙 Movimentos fora do expediente</h3>
+                            <p id="foraExpedienteDesc">Detecções fora do horário de trabalho configurado, nos últimos 7 dias</p>
+                        </div>
+                        <a href="#configuracoes" class="link-btn">Ajustar expediente</a>
+                    </div>
+                    <ul class="lista-fora" id="listaForaExpediente"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HISTÓRICO ================= -->
+        <section id="historico" class="secao">
+            <div class="container">
+                <div class="secao-head">
+                    <div>
+                        <span class="eyebrow">Histórico</span>
+                        <h2>Todas as movimentações</h2>
+                        <p>Saídas detectadas pelo sensor e lançamentos manuais, num só lugar.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="filtros">
+                        <input type="search" id="busca" placeholder="Buscar produto, dispositivo, observação...">
+                        <select id="filtroTipo" class="select">
+                            <option value="todos">Todos os tipos</option>
+                            <option value="sensor">Saída (sensor)</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="saida">Saída manual</option>
+                            <option value="contagem">Contagem física</option>
+                        </select>
+                        <select id="filtroPeriodo" class="select">
+                            <option value="todos">Todo o período</option>
+                            <option value="hoje">Hoje</option>
+                            <option value="7d">Últimos 7 dias</option>
+                            <option value="30d">Últimos 30 dias</option>
+                        </select>
+                        <button class="btn" id="btnExportar">⬇ Exportar CSV</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data e horário</th>
+                                    <th>Tipo</th>
+                                    <th>Produto</th>
+                                    <th>Qtd.</th>
+                                    <th>Origem</th>
+                                    <th>Detalhes</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaHistorico">
+                                <tr><td colspan="7" class="vazio">Carregando movimentações...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="paginacao">
+                        <span id="infoPagina">--</span>
+                        <div>
+                            <button class="btn" id="btnAnterior">← Anterior</button>
+                            <button class="btn" id="btnProxima">Próxima →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= RELATÓRIOS ================= -->
+        <section id="relatorios" class="secao secao-alt">
+            <div class="container">
+                <div class="secao-head">
+                    <div>
+                        <span class="eyebrow">Relatórios</span>
+                        <h2>Resumo e auditoria</h2>
+                        <p>Relatório pronto para imprimir ou salvar em PDF, e o resultado das contagens físicas.</p>
+                    </div>
+                    <div class="secao-acoes">
+                        <div class="segmented" id="seletorRelatorio">
+                            <button data-periodo="hoje" class="active">Hoje</button>
+                            <button data-periodo="7d">7 dias</button>
+                            <button data-periodo="30d">30 dias</button>
+                        </div>
+                        <button class="btn btn-primary" id="btnImprimir">🖨 Imprimir / PDF</button>
+                    </div>
+                </div>
+
+                <div class="panel relatorio" id="relatorio"></div>
+
+                <div class="panel">
+                    <div class="section-header">
+                        <div>
+                            <h3>Auditoria de inventário</h3>
+                            <p>Comparação entre o estoque calculado pelo sistema e a contagem física</p>
+                        </div>
+                        <button class="btn" data-acao="contagem">+ Nova contagem</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Produto</th>
+                                    <th>Sistema</th>
+                                    <th>Contado</th>
+                                    <th>Divergência</th>
+                                    <th>Acuracidade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaAuditoria"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CONFIGURAÇÕES ================= -->
+        <section id="configuracoes" class="secao">
+            <div class="container">
+                <div class="secao-head">
+                    <div>
+                        <span class="eyebrow">Configurações</span>
+                        <h2>Ajuste o sistema à sua operação</h2>
+                        <p>As configurações e os lançamentos manuais ficam salvos neste navegador.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-3">
+                    <form class="panel config-form" id="formConfig">
+                        <h3>Expediente</h3>
+                        <p class="ajuda">Movimentos fora desse horário geram alerta.</p>
+                        <div class="linha-campos">
+                            <label>Início <input type="time" id="cfgInicio" required></label>
+                            <label>Fim <input type="time" id="cfgFim" required></label>
+                        </div>
+                        <span class="label-texto">Dias de trabalho</span>
+                        <div class="dias-semana" id="cfgDias"></div>
+
+                        <h3 class="mt">Alertas e cálculos</h3>
+                        <label>Sensor inativo após (minutos)
+                            <input type="number" id="cfgOcioso" min="1" required>
+                        </label>
+                        <label>Cobertura desejada na compra (dias)
+                            <input type="number" id="cfgCobertura" min="1" required>
+                        </label>
+                        <button type="submit" class="btn btn-primary">Salvar configurações</button>
+                    </form>
+
+                    <div class="panel">
+                        <h3>Sensores detectados</h3>
+                        <p class="ajuda">Dispositivos que já enviaram dados e o produto ligado a cada um.</p>
+                        <ul class="lista-sensores" id="listaSensores"></ul>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Backup dos dados</h3>
+                        <p class="ajuda">Salve produtos, lançamentos e configurações num arquivo, ou restaure em outro computador.</p>
+                        <div class="botoes-coluna">
+                            <button class="btn" id="btnBackup">⬇ Baixar backup (.json)</button>
+                            <label class="btn btn-arquivo">⬆ Restaurar backup
+                                <input type="file" id="inputBackup" accept="application/json" hidden>
+                            </label>
+                            <button class="btn btn-perigo" id="btnLimpar">Apagar dados locais</button>
+                        </div>
+                        <h3 class="mt">Atualização</h3>
+                        <p class="ajuda">Os dados do sensor são atualizados a cada 10 segundos.</p>
+                        <button class="btn" id="btnPausar">⏸ Pausar atualização</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="rodape">
+        <div class="container">
+            <span>TempWatch · Contagem de estoque por sensor de presença</span>
+            <a href="#inicio">Voltar ao topo ↑</a>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL: PRODUTO ================= -->
+    <dialog id="modalProduto">
+        <form method="dialog" id="formProduto">
+            <h2 id="tituloProduto">Novo produto</h2>
+            <p class="modal-sub">Ligue o produto ao sensor que fica na prateleira ou na saída dele.</p>
+
+            <label>Nome do produto <input type="text" id="prodNome" required maxlength="60"></label>
+            <div class="linha-campos">
+                <label>SKU / código <input type="text" id="prodSku" maxlength="30"></label>
+                <label>Sensor
+                    <input type="text" id="prodDispositivo" list="listaDispositivos" required>
+                    <datalist id="listaDispositivos"></datalist>
+                </label>
+            </div>
+            <div class="linha-campos" id="campoEstoqueInicial">
+                <label>Estoque atual <input type="number" id="prodEstoque" min="0" required></label>
+                <label>Unidades por movimento <input type="number" id="prodUnidades" min="1" required></label>
+            </div>
+            <div class="linha-campos">
+                <label>Estoque mínimo <input type="number" id="prodMinimo" min="0" required></label>
+                <label>Prazo de entrega (dias) <input type="number" id="prodPrazo" min="0" required></label>
+            </div>
+            <label>Custo unitário (R$) <input type="number" id="prodCusto" min="0" step="0.01"></label>
+
+            <div class="modal-acoes">
+                <button type="button" class="btn btn-perigo hidden" id="btnExcluirProduto">Excluir</button>
+                <span class="espaco"></span>
+                <button type="button" class="btn" data-fechar>Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- ================= MODAL: MOVIMENTAÇÃO ================= -->
+    <dialog id="modalMovimento">
+        <form method="dialog" id="formMovimento">
+            <h2>Lançar movimentação</h2>
+            <p class="modal-sub">Registre o que o sensor não vê: chegadas de mercadoria, perdas e contagens.</p>
+
+            <div class="segmented tipo-mov" id="tipoMovimento">
+                <button type="button" data-tipo="entrada" class="active">Entrada</button>
+                <button type="button" data-tipo="saida">Saída manual</button>
+                <button type="button" data-tipo="contagem">Contagem física</button>
+            </div>
+
+            <label>Produto <select id="movProduto" class="select" required></select></label>
+            <p class="dica" id="movDica"></p>
+            <div class="linha-campos">
+                <label id="movQtdLabel">Quantidade <input type="number" id="movQtd" min="0" required></label>
+                <label>Data e hora <input type="datetime-local" id="movData" required></label>
+            </div>
+            <label>Observação <input type="text" id="movObs" maxlength="120" placeholder="Ex.: NF 1234, avaria, inventário mensal"></label>
+
+            <div class="modal-acoes">
+                <span class="espaco"></span>
+                <button type="button" class="btn" data-fechar>Cancelar</button>
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div class="toasts" id="toasts"></div>
 
     <script src="script.js"></script>
 </body>
